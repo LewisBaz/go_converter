@@ -1,35 +1,23 @@
 package network
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 )
 
-type Request struct {
-	Amount float64
-	From string
-	To string
+type RequestDep struct {
+	Client http.Client
+	URL string
 }
 
-type Response struct {
-	Result float64 `json:"conversion_result"`
-}
-
-var client = http.Client{}
-
-func MakeRequest(requestBody Request) (*Response, error) {
-	apikey := os.Getenv("ExchangeRate_API_KEY")
-	url := fmt.Sprintf("https://v6.exchangerate-api.com/v6/%s/pair/%s/%s/%.2f", apikey, requestBody.From, requestBody.To, requestBody.Amount)
-
-	req, err := http.NewRequest("GET", url, nil) 
+func BaseRequest(rd RequestDep) ([]byte, error) {
+	req, err := http.NewRequest("GET", rd.URL, nil) 
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := client.Do(req)
+	resp, err := rd.Client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -44,12 +32,5 @@ func MakeRequest(requestBody Request) (*Response, error) {
 		return nil, err
 	}
 
-	var response Response
-
-	error := json.Unmarshal(body, &response)
-	if error != nil {
-		return nil, error
-	}
-
-	return &response, nil
+	return body, nil
 }

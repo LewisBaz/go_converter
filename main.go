@@ -3,13 +3,15 @@ package main
 import (
 	"flag"
 	"fmt"
-	"go_converter/network"
+	pcnm "go_converter/network/routes/pair" 
+	"net/http"
 	"os"
 )
 
-func main() {
+var client = http.Client{}
 
-	convertFlagSet := flag.NewFlagSet("cnv", flag.ExitOnError)
+func main() {
+	convertFlagSet := flag.NewFlagSet("convert", flag.ExitOnError)
 	var cnvFromValue string
 	var cnvToValue string
 	var amountToConvert float64
@@ -17,29 +19,36 @@ func main() {
 	convertFlagSet.StringVar(&cnvToValue, "to", "EUR", "The currency to convert to")
 	convertFlagSet.Float64Var(&amountToConvert, "a", 1, "Amount of currency to convert")
 
+	listFlag := flag.String("list", "", "")
+
+	flag.Parse()
+
 	if len(os.Args) < 2 {
-        fmt.Println("expected 'cnv' or 'test' subcommands")
+        fmt.Println("expected 'convert' or 'list' subcommands")
         os.Exit(1)
     }
 
 	switch os.Args[1] {
-	case "cnv":
+	case "convert":
 		convertFlagSet.Parse(os.Args[2:])
 		convertFlagSet.Parse(os.Args[4:])
 		convertFlagSet.Parse(os.Args[6:])
 
-		request := network.Request{
-			Amount: amountToConvert, 
-			From: cnvFromValue,
-			To: cnvToValue,
-		}
-
-		result, err := network.MakeRequest(request)
+		result, err := pcnm.MakeRequest(
+			pcnm.PairCurrencyNM{Client: client}, 
+			pcnm.Request{
+				Amount: amountToConvert, 
+				From: cnvFromValue,
+				To: cnvToValue,
+		})
 		if err != nil {
 			fmt.Println(err)
+			return 
 		}
 
 		fmt.Println(result.Result)
+	case "list":
+		fmt.Println("list requested", listFlag)
 	default:
 		fmt.Println("Unknown command")
 		os.Exit(1)
